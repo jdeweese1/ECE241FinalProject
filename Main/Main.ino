@@ -1,23 +1,20 @@
 #include <LiquidCrystal.h>
-//#include <SW_SPI.h>
-//#include <SPI.h>
 #include <ButtonDebounce.h>
 
 volatile int encoderPosition = 0;
 int row;
 int col;
 int numRows= 4;
-int numCols= 16;
+int numCols= 20;
 int temp =0;
 // char contents[numRows][numCols];
 
 float curRow;
 float curCol;
-char contents[4][16] ;
+char contents[4][20] ;
 
 unsigned long timer;
 LiquidCrystal LcdDriver(11,9,5,6,7,8);
-
 
 // Set up pin and button state.
 int bState;
@@ -28,33 +25,28 @@ enum controlStates { Horizontal,Vertical};
 controlStates curState = Vertical;
 unsigned long buttonTimer;
 
-
 void setup()
 {
-	
 	//pinMode(12,OUTPUT);
 	pinMode(4,INPUT);
 	for(int i =0; i<numRows; i++)
 	{
 		for(int j =0; j<numCols; j++)
 		{
-			contents[i][j] = ' ';
+			contents[i][j] = '_';
 		}
 	}
-	
 	attachInterrupt(digitalPinToInterrupt(2), MonitorA, CHANGE);
 	attachInterrupt(digitalPinToInterrupt(3), MonitorB, CHANGE);
+	Serial.begin(9600);
 	ButtonInitialize(4);
 	LcdDriver.begin(numCols,numRows);
 	LcdDriver.setCursor(0,0);
-	LcdDriver.print("A");
 	timer = 0;
 }
-
 void loop()
 {
-	
-	if(millis() -timer >200)
+	if(millis() -timer >700)
 	{
 		bState = ButtonTest();
 		
@@ -66,28 +58,12 @@ void loop()
 		{
 			curState = Vertical;
 		}
-		
-		timer += 100;
+		timer += 700;
+
 		LcdDriver.clear();
-		/*
-			LcdDriver.setCursor(0,0);
-			if(bState != 0) temp = bState;
-			LcdDriver.print(temp);
-			LcdDriver.print(" ");
-			LcdDriver.print((curState==Vertical)? "V":"H");
-			LcdDriver.setCursor(0,1);
-			LcdDriver.print("r");
-			LcdDriver.print((int)curRow);
-			LcdDriver.print("c");
-			LcdDriver.print((int)curCol);
-			*/
-			
-			/*digitalWrite(10,LOW);
-			SPI.beginTransaction(settings);
-			SPI.transfer16(0xff);
-			
-			digitalWrite(10,HIGH);
-			SPI.endTransaction();*/
+		shiftArrayRight(contents);
+		insertRandomChars(contents);
+		printArray(contents);
 	}
 }
 void newGame()
@@ -96,21 +72,34 @@ void newGame()
 	{
 		for(int j =0; j<numCols;j++)
 		{
-			contents[i][j]=' ';		}
+			contents[i][j]=' ';		
+		}
 	}
 }
-void shiftArrayRight(char inArray[4][16])
+void shiftArrayRight(char inArray[4][20])
 {
-
+	char newArray[4][20];
+	for(int i =0; i<4;i++)
+	{
+		for(int j =20-1; j>=0;j--)
+		{
+			inArray[i][j+1] = inArray[i][j];
+		}
+		
+	}
 }
-void insertRandomChars(char inArray[4][16])
+void insertRandomChars(char inArray[4][20])
 {
-	for(int i =0; i<numRows;i++)
+	for(int i =0; i<numRows; i++)//loop through rows
 	{
 		bool shouldPlaceNew = (random(0,100) < 20);
 		if(shouldPlaceNew)
 		{
 			inArray[i][0] = '*';
+		}
+		else
+		{
+			inArray[i][0] ='_';
 		}
 	}
 }
@@ -158,13 +147,26 @@ void ButtonInitialize( int pin )
 		ButtonPin = pin;
 		pinMode( ButtonPin, INPUT );
 }
-void printArray(char inArray[4][16])
+void SerialPrintArray(char inArray[4][20])
+{
+	Serial.println();
+	for(int i =0; i<4;i++)//make back to 4
+	{
+		for (int j = 0; j < 20; j++)//make back to 20
+		{
+			Serial.print(inArray[i][j]);
+			
+		}
+		Serial.println();
+	}
+}
+void printArray(char inArray[4][20])
 {
 	for(int i =0; i<4;i++)
 	{
-		for (int j = 0; j < 16; i++)
+		for (int j = 0; j < 20; j++)
 		{
-			LcdDriver.setCursor(i,j);
+			LcdDriver.setCursor(j,i);
 			LcdDriver.print(inArray[i][j]);
 		}
 	}
