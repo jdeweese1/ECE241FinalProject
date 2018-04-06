@@ -1,5 +1,5 @@
 #include <LiquidCrystal.h>
-#include <SW_SPI.h>
+//#include <SW_SPI.h>
 #include <SPI.h>
 
 volatile int encoderPosition = 0;
