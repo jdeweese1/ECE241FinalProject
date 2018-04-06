@@ -13,7 +13,7 @@ int temp =0;
 
 float curRow;
 float curCol;
-char contents[4][16] ; 
+char contents[4][16] ;
 
 unsigned long timer;
 LiquidCrystal LcdDriver(11,9,5,6,7,8);
@@ -54,7 +54,7 @@ void setup()
 void loop()
 {
 	
-	if(millis() -timer >100)
+	if(millis() -timer >200)
 	{
 		bState = ButtonTest();
 		
@@ -69,6 +69,7 @@ void loop()
 		
 		timer += 100;
 		LcdDriver.clear();
+		/*
 			LcdDriver.setCursor(0,0);
 			if(bState != 0) temp = bState;
 			LcdDriver.print(temp);
@@ -79,6 +80,7 @@ void loop()
 			LcdDriver.print((int)curRow);
 			LcdDriver.print("c");
 			LcdDriver.print((int)curCol);
+			*/
 			
 			/*digitalWrite(10,LOW);
 			SPI.beginTransaction(settings);
@@ -87,8 +89,6 @@ void loop()
 			digitalWrite(10,HIGH);
 			SPI.endTransaction();*/
 	}
-			
-
 }
 void newGame()
 {
@@ -99,9 +99,20 @@ void newGame()
 			contents[i][j]=' ';		}
 	}
 }
-void shiftArrayRight(char inArray[16][4])
+void shiftArrayRight(char inArray[4][16])
 {
 
+}
+void insertRandomChars(char inArray[4][16])
+{
+	for(int i =0; i<numRows;i++)
+	{
+		bool shouldPlaceNew = (random(0,100) < 20);
+		if(shouldPlaceNew)
+		{
+			inArray[i][0] = '*';
+		}
+	}
 }
 void MonitorA()
 {
@@ -128,14 +139,6 @@ void MonitorB()
 	}
 	bState = ButtonTest();
 }
-/*void VHInitialize()
-{
-	curState = Vertical;
-}
-void toggleVH()
-{
-	curState = Vertical;
-}*/
 void incrementVHState(float n)
 {
 	
@@ -149,16 +152,23 @@ void incrementVHState(float n)
 			curRow =0 ;
 		}
 		return;
-	
-
 }
-
 void ButtonInitialize( int pin )
 {
 		ButtonPin = pin;
 		pinMode( ButtonPin, INPUT );
 }
-
+void printArray(char inArray[4][16])
+{
+	for(int i =0; i<4;i++)
+	{
+		for (int j = 0; j < 16; i++)
+		{
+			LcdDriver.setCursor(i,j);
+			LcdDriver.print(inArray[i][j]);
+		}
+	}
+}
 // Function called in loop to check for button release.
 // Returns a 1 on the buttons release.
 int ButtonTest(  )
@@ -207,6 +217,5 @@ int ButtonTest(  )
 			 break;
 	} // End of switch on buttonState
 	
-	return ReturnValue;
-	
+	return ReturnValue;	
 }
