@@ -49,7 +49,7 @@ void loop()
 {
 	if(millis() -timer >700)
 	{
-		int t = Serial.available();
+		int t = 1;
 		if(t)
 		{
 			char temp[t];
@@ -65,8 +65,6 @@ void loop()
 			{
 				curState = Pause;
 			}
-			
-
 			LcdDriver.clear();
 			shiftArrayRight(contents);
 			insertRandomChars(contents);
@@ -89,7 +87,7 @@ void loop()
 }
 bool hasCollision(char inArray[4][20], int r)
 {
-	if(inArray[r][20] == spriteChar) return true;
+	if(inArray[r][19] == spriteChar) return true;
 	return false;
 }
 void newGame()
@@ -110,7 +108,7 @@ void shiftArrayRight(char inArray[4][20])
 {
 	for(int i =0; i<4;i++)
 	{
-		for(int j =20-1; j>=0;j--)
+		for(int j =20-2; j>=0;j--)
 		{
 			inArray[i][j+1] = inArray[i][j];
 		}
@@ -130,7 +128,6 @@ void insertRandomChars(char inArray[4][20])
 			inArray[i][0] =emptyChar;
 		}
 	}
-	inArray[3][0] = spriteChar;
 }
 void MonitorA()
 {
