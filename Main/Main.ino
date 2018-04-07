@@ -2,8 +2,6 @@
 #include <ButtonDebounce.h>
 
 volatile int encoderPosition = 0;
-int row;
-int col;
 int numRows= 4;
 int numCols= 20;
 
@@ -13,6 +11,8 @@ char contents[4][20];
 int lives = 3;
 
 unsigned long timer;
+unsigned long startTime;
+unsigned long delta;
 LiquidCrystal LcdDriver(11,9,5,6,7,8);
 
 // Set up pin and button state.
@@ -20,11 +20,12 @@ int bState;
 int ButtonPin = 4;
 enum buttonStates {BS_Idle,BS_Wait,BS_Low};
 buttonStates buttonState = BS_Idle;
-enum GameStates { Pause,NewGame, Playing };
+enum GameStates { Pause,NewGame, Playing, BetweenGames, EndOfGame };
 GameStates curState = Playing;
 unsigned long buttonTimer;
 char emptyChar ='_';
 char spriteChar='*';
+
 
 void setup()
 {
@@ -47,21 +48,21 @@ void setup()
 }
 void loop()
 {
-	if(millis() -timer >700)
+	if(millis() - timer >700)
 	{
-		int t = 1;
-		if(t)
+		if(curState == Playing)
 		{
+			int t = 12;
 			char temp[t];
 			Serial.readBytes(temp, t);
 			bState = ButtonTest();
 		
-			if(bState == 3)
+			if(buttonTest() == 3)
 			{
 				curState = NewGame;
 				newGame();
 			}
-			if ( bState == 2)
+			else if ( bState == 2)//short press
 			{
 				curState = Pause;
 			}
@@ -72,16 +73,49 @@ void loop()
 			{
 				if(--lives <= 0)
 				{
-					newGame();
-					curState = NewGame;
+					//newGame();
+					curState = EndOfGame;
 				}
+				delta = millis() - startTime;
 			}
-			SerialPrintArray(contents);
+			//SerialPrintArray(contents);
+			printArray(contents);
 		}
-		
-		printArray(contents);
-		
-
+		else if (curState == EndOfGame)
+		{
+			LcdDriver.clear();
+			LcdDriver.setCursor(0,0);
+			LcdDriver.print("You died");
+			LcdDriver.setCursor(0,1);
+			LcdDriver.print(delta/1000);
+			LcdDriver.print(" seconds");
+			LcdDriver.setCursor(0,3);
+			LcdDriver.print("do thing with button");
+			if(bState)
+			{
+				curState = Playing;
+				newGame();
+			}
+		}
+		else if (curState == Pause)
+		{
+			LcdDriver.clear();
+			LcdDriver.print("paused");
+			if(bState==2)
+			{
+				curState = Playing;
+			}
+			else if(bState ==3)
+			{
+				curState= Playing;
+				newGame();
+			}
+		}
+		else
+		{
+			newGame();
+			curState = Playing;
+		}
 		timer += 700;
 	}
 }
@@ -93,7 +127,7 @@ bool hasCollision(char inArray[4][20], int r)
 void newGame()
 {
 	LcdDriver.clear();
-	LcdDriver.print("You ran out of lives");
+	//LcdDriver.print("You ran out of lives");
 	for(int i=0; i<numRows;i++)
 	{
 		for(int j =0; j<numCols;j++)
@@ -101,6 +135,7 @@ void newGame()
 			contents[i][j]= emptyChar;		
 		}
 	}
+	startTime = millis();
 	lives = 3;
 	curRow=0;
 }
@@ -139,8 +174,7 @@ void MonitorA()
 	{
 		incrementVHState(-.25);
 	}
-	
-	bState = ButtonTest();
+	//bState = ButtonTest();
 }
 void MonitorB()
 {
@@ -152,7 +186,7 @@ void MonitorB()
 	{
 		incrementVHState(.25);
 	}
-	bState = ButtonTest();
+	//bState = ButtonTest();
 }
 void incrementVHState(float n)
 {
@@ -224,15 +258,16 @@ int ButtonTest(  )
 			 if( Press == HIGH ) // and now goes high
 			 {
 				 buttonState = BS_Idle;  // return to 0 state.
+				 return 0;
 			 }
 			 
-				 if( millis() - buttonTimer >= 10 )
-				 {
-						ReturnValue = 2; // Return 1 indicating pressed.
-						buttonState = BS_Low; // move on to state two
-				 }
-					//buttonState = BS_LOW;
-			 
+			 if( millis() - buttonTimer >= 10 )
+			 {
+			 		buttonState = BS_Low;
+					return 2; // 2- more than 10 millis
+					 // move on to state two
+			 }
+				//buttonState = BS_LOW;
 			 break;
 		 case BS_Low:
 			 if( Press == HIGH )
@@ -243,7 +278,7 @@ int ButtonTest(  )
 				 {
 					return 2;
 				 }
-				 else if(millis() - buttonTimer > 500)
+				 else
 				 {
 					return 3;
 				 }
