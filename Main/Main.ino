@@ -6,12 +6,11 @@ int row;
 int col;
 int numRows= 4;
 int numCols= 20;
-int temp =0;
-// char contents[numRows][numCols];
 
 float curRow;
 float curCol;
-char contents[4][20] ;
+char contents[4][20];
+int lives = 3;
 
 unsigned long timer;
 LiquidCrystal LcdDriver(11,9,5,6,7,8);
@@ -21,9 +20,11 @@ int bState;
 int ButtonPin = 4;
 enum buttonStates {BS_Idle,BS_Wait,BS_Low};
 buttonStates buttonState = BS_Idle;
-enum controlStates { Horizontal,Vertical};
-controlStates curState = Vertical;
+enum GameStates { Pause,NewGame };
+GameStates curState = Vertical;
 unsigned long buttonTimer;
+char emptyChar ='_';
+char spriteChar='*';
 
 void setup()
 {
@@ -33,7 +34,7 @@ void setup()
 	{
 		for(int j =0; j<numCols; j++)
 		{
-			contents[i][j] = '_';
+			contents[i][j] = emptyChar;
 		}
 	}
 	attachInterrupt(digitalPinToInterrupt(2), MonitorA, CHANGE);
@@ -52,19 +53,34 @@ void loop()
 		
 		if(bState == 3)
 		{
+			gameState = NewGame;
 			newGame();
 		}
 		if ( bState == 2)
 		{
-			curState = Vertical;
+			gameState = Pause;
 		}
-		timer += 700;
+		
 
 		LcdDriver.clear();
 		shiftArrayRight(contents);
 		insertRandomChars(contents);
 		printArray(contents);
+		if(hasCollision(contents, curRow))
+		{
+			if(--lives <= 0)
+			{
+				newGame();
+			}
+		}
+
+		timer += 700;
 	}
+}
+bool hasCollision(char inArray[4][20], int r)
+{
+	if(inArray[r][20] == spriteChar) return true;
+	return false;
 }
 void newGame()
 {
@@ -72,9 +88,11 @@ void newGame()
 	{
 		for(int j =0; j<numCols;j++)
 		{
-			contents[i][j]=' ';		
+			contents[i][j]= emptyChar;		
 		}
 	}
+	lives = 3;
+	curRow=0;
 }
 void shiftArrayRight(char inArray[4][20])
 {
@@ -85,21 +103,20 @@ void shiftArrayRight(char inArray[4][20])
 		{
 			inArray[i][j+1] = inArray[i][j];
 		}
-		
 	}
 }
 void insertRandomChars(char inArray[4][20])
 {
 	for(int i =0; i<numRows; i++)//loop through rows
 	{
-		bool shouldPlaceNew = (random(0,100) < 20);
+		bool shouldPlaceNew = (random(0,100) < 15);
 		if(shouldPlaceNew)
 		{
-			inArray[i][0] = '*';
+			inArray[i][0] = spriteChar;
 		}
 		else
 		{
-			inArray[i][0] ='_';
+			inArray[i][0] =emptyChar;
 		}
 	}
 }
@@ -170,6 +187,10 @@ void printArray(char inArray[4][20])
 			LcdDriver.print(inArray[i][j]);
 		}
 	}
+	LcdDriver.setCursor(19, curRow);
+	LcdDriver.print('X');
+	LcdDriver.setCursor(0,0);
+	LcdDriver.print(lives);
 }
 // Function called in loop to check for button release.
 // Returns a 1 on the buttons release.
