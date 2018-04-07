@@ -20,8 +20,8 @@ int bState;
 int ButtonPin = 4;
 enum buttonStates {BS_Idle,BS_Wait,BS_Low};
 buttonStates buttonState = BS_Idle;
-enum GameStates { Pause,NewGame };
-GameStates curState = Vertical;
+enum GameStates { Pause,NewGame, Playing };
+GameStates curState = Playing;
 unsigned long buttonTimer;
 char emptyChar ='_';
 char spriteChar='*';
@@ -49,30 +49,40 @@ void loop()
 {
 	if(millis() -timer >700)
 	{
-		bState = ButtonTest();
+		int t = Serial.available();
+		if(t)
+		{
+			char temp[t];
+			Serial.readBytes(temp, t);
+			bState = ButtonTest();
 		
-		if(bState == 3)
-		{
-			gameState = NewGame;
-			newGame();
-		}
-		if ( bState == 2)
-		{
-			gameState = Pause;
-		}
-		
-
-		LcdDriver.clear();
-		shiftArrayRight(contents);
-		insertRandomChars(contents);
-		printArray(contents);
-		if(hasCollision(contents, curRow))
-		{
-			if(--lives <= 0)
+			if(bState == 3)
 			{
+				curState = NewGame;
 				newGame();
 			}
+			if ( bState == 2)
+			{
+				curState = Pause;
+			}
+			
+
+			LcdDriver.clear();
+			shiftArrayRight(contents);
+			insertRandomChars(contents);
+			if(hasCollision(contents, curRow))
+			{
+				if(--lives <= 0)
+				{
+					newGame();
+					curState = NewGame;
+				}
+			}
+			SerialPrintArray(contents);
 		}
+		
+		printArray(contents);
+		
 
 		timer += 700;
 	}
@@ -84,6 +94,8 @@ bool hasCollision(char inArray[4][20], int r)
 }
 void newGame()
 {
+	LcdDriver.clear();
+	LcdDriver.print("You ran out of lives");
 	for(int i=0; i<numRows;i++)
 	{
 		for(int j =0; j<numCols;j++)
@@ -96,7 +108,6 @@ void newGame()
 }
 void shiftArrayRight(char inArray[4][20])
 {
-	char newArray[4][20];
 	for(int i =0; i<4;i++)
 	{
 		for(int j =20-1; j>=0;j--)
@@ -119,6 +130,7 @@ void insertRandomChars(char inArray[4][20])
 			inArray[i][0] =emptyChar;
 		}
 	}
+	inArray[3][0] = spriteChar;
 }
 void MonitorA()
 {
@@ -166,6 +178,8 @@ void ButtonInitialize( int pin )
 }
 void SerialPrintArray(char inArray[4][20])
 {
+	Serial.println();
+	Serial.print(sizeof(contents[0]));
 	Serial.println();
 	for(int i =0; i<4;i++)//make back to 4
 	{
