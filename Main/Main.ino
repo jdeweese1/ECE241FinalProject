@@ -1,5 +1,5 @@
 #include <LiquidCrystal.h>
-#include <ButtonDebounce.h>
+#include "ButtonDebounce.h"
 
 volatile int encoderPosition = 0;
 int numRows= 4;
@@ -17,27 +17,25 @@ LiquidCrystal LcdDriver(11,9,5,6,7,8);
 
 // Set up pin and button state.
 int bState;
-int ButtonPin = 4;
-enum buttonStates {BS_Idle,BS_Wait,BS_Low};
-buttonStates buttonState = BS_Idle;
+//enum buttonStates {BS_Idle,BS_Wait,BS_Low};
+//buttonStates buttonState = BS_Idle;
 enum GameStates { Pause,NewGame, Playing, BetweenGames, EndOfGame };
+enum GameNumber {Game1, Game2};
+GameNumber gameState = Game1; 
 GameStates curState = Playing;
-unsigned long buttonTimer;
+unsigned long bTime;
 char emptyChar ='_';
 char spriteChar='*';
+
+int INTERVAL = 700;
+//ButtonInitialize(4);
 
 
 void setup()
 {
 	//pinMode(12,OUTPUT);
 	pinMode(4,INPUT);
-	for(int i =0; i<numRows; i++)
-	{
-		for(int j =0; j<numCols; j++)
-		{
-			contents[i][j] = emptyChar;
-		}
-	}
+	prepopulateArray();
 	attachInterrupt(digitalPinToInterrupt(2), MonitorA, CHANGE);
 	attachInterrupt(digitalPinToInterrupt(3), MonitorB, CHANGE);
 	Serial.begin(9600);
@@ -48,76 +46,111 @@ void setup()
 }
 void loop()
 {
-	if(millis() - timer >700)
+	if(millis() - timer >= INTERVAL)
 	{
+		bState = ButtonTest();
 		if(curState == Playing)
 		{
+			if(millis()/1000 - startTime/1000 > 30 && Game2 == Game2)
+			{
+				curState = EndOfGame;
+
+			}
 			int t = 12;
 			char temp[t];
 			Serial.readBytes(temp, t);
-			bState = ButtonTest();
 		
-			if(buttonTest() == 3)
+			if(bState == 3)
 			{
-				curState = NewGame;
-				newGame();
+				switchGame();
 			}
 			else if ( bState == 2)//short press
 			{
-				curState = Pause;
+				curState = NewGame;
 			}
 			LcdDriver.clear();
 			shiftArrayRight(contents);
 			insertRandomChars(contents);
 			if(hasCollision(contents, curRow))
 			{
-				if(--lives <= 0)
+				if(gameState == Game1)
 				{
-					//newGame();
-					curState = EndOfGame;
+					if(--lives <= 0)
+					{
+						//newGame();
+						curState = EndOfGame;
+					}
+					delta = millis() - startTime;
 				}
-				delta = millis() - startTime;
+				else//is Game2
+				{
+					lives++;
+					
+				}
 			}
+			if((INTERVAL - 50 > 70) && (gameState == Game2))
+					{
+						INTERVAL -= 50;
+					}
 			//SerialPrintArray(contents);
 			printArray(contents);
-		}
+
+		}//end playing
 		else if (curState == EndOfGame)
 		{
 			LcdDriver.clear();
 			LcdDriver.setCursor(0,0);
-			LcdDriver.print("You died");
+			LcdDriver.print("End of game");
 			LcdDriver.setCursor(0,1);
 			LcdDriver.print(delta/1000);
 			LcdDriver.print(" seconds");
 			LcdDriver.setCursor(0,3);
-			LcdDriver.print("do thing with button");
+			LcdDriver.print("press button ");
 			if(bState)
 			{
 				curState = Playing;
 				newGame();
 			}
 		}
-		else if (curState == Pause)
-		{
-			LcdDriver.clear();
-			LcdDriver.print("paused");
-			if(bState==2)
-			{
-				curState = Playing;
-			}
-			else if(bState ==3)
-			{
-				curState= Playing;
-				newGame();
-			}
-		}
+		
 		else
 		{
 			newGame();
 			curState = Playing;
 		}
-		timer += 700;
+		delta = (millis() - startTime);
+		timer += INTERVAL;
 	}
+}
+void prepopulateArray()
+{
+	for(int i =0; i<numRows-4; i++)
+	{
+		for(int j =0; j<numCols; j++)
+		{
+			contents[i][j] = emptyChar;
+		}
+	}
+	for(int i =0; i<numRows;i++)
+	{
+		for(int j =0; j<numCols;j++)
+		{
+			contents[i][j] = (random(0,100) < 10)? spriteChar:emptyChar;
+		}
+		shiftArrayRight(contents);
+	}
+}
+int switchGame()
+{
+	if( gameState == Game1)
+	{
+		gameState = Game2;
+	}
+	else if (gameState == Game2)
+	{
+		gameState = Game1;
+	}
+	newGame();
 }
 bool hasCollision(char inArray[4][20], int r)
 {
@@ -128,15 +161,17 @@ void newGame()
 {
 	LcdDriver.clear();
 	//LcdDriver.print("You ran out of lives");
-	for(int i=0; i<numRows;i++)
-	{
-		for(int j =0; j<numCols;j++)
-		{
-			contents[i][j]= emptyChar;		
-		}
-	}
+	prepopulateArray();
+
 	startTime = millis();
-	lives = 3;
+	if(gameState == Game1)
+	{
+		lives = 3;
+	}
+	else if ( gameState == Game2)
+	{
+		lives =0;
+	}
 	curRow=0;
 }
 void shiftArrayRight(char inArray[4][20])
@@ -202,11 +237,11 @@ void incrementVHState(float n)
 		}
 		return;
 }
-void ButtonInitialize( int pin )
+/*void ButtonInitialize( int pin )
 {
 		ButtonPin = pin;
 		pinMode( ButtonPin, INPUT );
-}
+}*/
 void SerialPrintArray(char inArray[4][20])
 {
 	Serial.println();
@@ -236,10 +271,12 @@ void printArray(char inArray[4][20])
 	LcdDriver.print('X');
 	LcdDriver.setCursor(0,0);
 	LcdDriver.print(lives);
+
+
 }
 // Function called in loop to check for button release.
 // Returns a 1 on the buttons release.
-int ButtonTest(  )
+/*int ButtonTest(  )
 {
 	// Read in the buttons current value.
 	int Press = digitalRead( ButtonPin ); 
@@ -250,7 +287,7 @@ int ButtonTest(  )
 			 if( Press == LOW )
 			 {
 				 // Once press occurs
-				 buttonTimer = millis();  // record time
+				 bTime = millis();  // record time
 				 buttonState = BS_Wait;        // and move to next state
 			 }
 			 break; 
@@ -261,7 +298,7 @@ int ButtonTest(  )
 				 return 0;
 			 }
 			 
-			 if( millis() - buttonTimer >= 10 )
+			 if( millis() - bTime >= 10 )
 			 {
 			 		buttonState = BS_Low;
 					return 2; // 2- more than 10 millis
@@ -274,7 +311,7 @@ int ButtonTest(  )
 			 {
 				 ReturnValue = 2; // Return 2 indicating release.
 				 buttonState = BS_Idle;
-				 if (millis() - buttonTimer < 500)
+				 if (millis() - bTime < 500)
 				 {
 					return 2;
 				 }
@@ -287,4 +324,4 @@ int ButtonTest(  )
 	} // End of switch on buttonState
 	
 	return ReturnValue;	
-}
+}*/
