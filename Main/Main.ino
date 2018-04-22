@@ -12,7 +12,7 @@ int lives = 3;
 
 unsigned long timer;
 unsigned long startTime;
-unsigned long delta;
+int delta;
 LiquidCrystal LcdDriver(11,9,5,6,7,8);
 
 // Set up pin and button state.
@@ -27,9 +27,8 @@ unsigned long bTime;
 char emptyChar ='_';
 char spriteChar='*';
 
-int INTERVAL = 700;
+int INTERVAL = 200;
 //ButtonInitialize(4);
-
 
 void setup()
 {
@@ -44,17 +43,22 @@ void setup()
 	LcdDriver.setCursor(0,0);
 	timer = 0;
 }
+
 void loop()
 {
+	if((INTERVAL - 50 > 70) && gameState == Playing	)
+	{
+		INTERVAL -= 50;
+	}
 	if(millis() - timer >= INTERVAL)
 	{
 		bState = ButtonTest();
 		if(curState == Playing)
 		{
-			if(millis()/1000 - startTime/1000 > 30 && Game2 == Game2)
+			if((millis() - startTime)/1000 >= 30 && gameState == Game2)
 			{
 				curState = EndOfGame;
-
+				delta = millis() - startTime;
 			}
 			int t = 12;
 			char temp[t];
@@ -79,8 +83,9 @@ void loop()
 					{
 						//newGame();
 						curState = EndOfGame;
+						delta = (millis() - startTime);
 					}
-					delta = millis() - startTime;
+					
 				}
 				else//is Game2
 				{
@@ -88,25 +93,14 @@ void loop()
 					
 				}
 			}
-			if((INTERVAL - 50 > 70) && (gameState == Game2))
-					{
-						INTERVAL -= 50;
-					}
-			//SerialPrintArray(contents);
+			
 			printArray(contents);
 
 		}//end playing
 		else if (curState == EndOfGame)
 		{
-			LcdDriver.clear();
-			LcdDriver.setCursor(0,0);
-			LcdDriver.print("End of game");
-			LcdDriver.setCursor(0,1);
-			LcdDriver.print(delta/1000);
-			LcdDriver.print(" seconds");
-			LcdDriver.setCursor(0,3);
-			LcdDriver.print("press button ");
-			if(bState)
+			printEndData();
+			if(bState==2 || bState == 3)
 			{
 				curState = Playing;
 				newGame();
@@ -118,9 +112,26 @@ void loop()
 			newGame();
 			curState = Playing;
 		}
-		delta = (millis() - startTime);
+		//delta = (millis() - startTime);
 		timer += INTERVAL;
 	}
+}
+void printEndData()
+{
+			LcdDriver.clear();
+			LcdDriver.setCursor(0,0);
+			LcdDriver.print("End of game");
+			LcdDriver.setCursor(0,1);
+			LcdDriver.print(delta/1000);
+			LcdDriver.print(" seconds");
+			LcdDriver.setCursor(0,2);
+			LcdDriver.print(lives);
+			if(gameState == Game2)
+			{
+				LcdDriver.print(" collected");
+			}
+			LcdDriver.setCursor(0,3);
+			LcdDriver.print("press button ");
 }
 void prepopulateArray()
 {
@@ -135,7 +146,7 @@ void prepopulateArray()
 	{
 		for(int j =0; j<numCols;j++)
 		{
-			contents[i][j] = (random(0,100) < 10)? spriteChar:emptyChar;
+			contents[i][j] = (random(0,100) < 20)? spriteChar:emptyChar;
 		}
 		shiftArrayRight(contents);
 	}
@@ -173,6 +184,7 @@ void newGame()
 		lives =0;
 	}
 	curRow=0;
+	INTERVAL	= 50;
 }
 void shiftArrayRight(char inArray[4][20])
 {
@@ -237,11 +249,6 @@ void incrementVHState(float n)
 		}
 		return;
 }
-/*void ButtonInitialize( int pin )
-{
-		ButtonPin = pin;
-		pinMode( ButtonPin, INPUT );
-}*/
 void SerialPrintArray(char inArray[4][20])
 {
 	Serial.println();
@@ -271,57 +278,4 @@ void printArray(char inArray[4][20])
 	LcdDriver.print('X');
 	LcdDriver.setCursor(0,0);
 	LcdDriver.print(lives);
-
-
 }
-// Function called in loop to check for button release.
-// Returns a 1 on the buttons release.
-/*int ButtonTest(  )
-{
-	// Read in the buttons current value.
-	int Press = digitalRead( ButtonPin ); 
-	int ReturnValue = 0;
-	switch( buttonState )
-	{
-		case BS_Idle: // if we are waiting for a press,
-			 if( Press == LOW )
-			 {
-				 // Once press occurs
-				 bTime = millis();  // record time
-				 buttonState = BS_Wait;        // and move to next state
-			 }
-			 break; 
-		case BS_Wait: // button just went low
-			 if( Press == HIGH ) // and now goes high
-			 {
-				 buttonState = BS_Idle;  // return to 0 state.
-				 return 0;
-			 }
-			 
-			 if( millis() - bTime >= 10 )
-			 {
-			 		buttonState = BS_Low;
-					return 2; // 2- more than 10 millis
-					 // move on to state two
-			 }
-				//buttonState = BS_LOW;
-			 break;
-		 case BS_Low:
-			 if( Press == HIGH )
-			 {
-				 ReturnValue = 2; // Return 2 indicating release.
-				 buttonState = BS_Idle;
-				 if (millis() - bTime < 500)
-				 {
-					return 2;
-				 }
-				 else
-				 {
-					return 3;
-				 }
-			 } // End of high test.
-			 break;
-	} // End of switch on buttonState
-	
-	return ReturnValue;	
-}*/
