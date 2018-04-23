@@ -24,7 +24,7 @@ enum GameNumber {Game1, Game2};
 GameNumber gameState = Game1; 
 GameStates curState = Playing;
 unsigned long bTime;
-char emptyChar ='_';
+char emptyChar =' ';
 char spriteChar='*';
 
 int INTERVAL = 200;
