@@ -8,11 +8,11 @@ int numCols= 20;
 float curRow;
 float curCol;
 char contents[4][20];
-int lives = 3;
+int lives = 5;
 
 unsigned long timer;
 unsigned long startTime;
-int delta;
+unsigned	long delta;
 LiquidCrystal LcdDriver(11,9,5,6,7,8);
 
 // Set up pin and button state.
@@ -28,6 +28,7 @@ char emptyChar ='_';
 char spriteChar='*';
 
 int INTERVAL = 200;
+#define INIT_INTERVAL  200
 //ButtonInitialize(4);
 
 void setup()
@@ -46,12 +47,13 @@ void setup()
 
 void loop()
 {
-	if((INTERVAL - 50 > 70) && gameState == Playing	)
-	{
-		INTERVAL -= 50;
-	}
+	
 	if(millis() - timer >= INTERVAL)
 	{
+		if((INTERVAL - 10 > 50) && curState	 == Playing	)
+		{
+			INTERVAL -= 10;
+		}
 		bState = ButtonTest();
 		if(curState == Playing)
 		{
@@ -100,6 +102,7 @@ void loop()
 		else if (curState == EndOfGame)
 		{
 			printEndData();
+			INTERVAL	= INIT_INTERVAL	;
 			if(bState==2 || bState == 3)
 			{
 				curState = Playing;
@@ -125,13 +128,15 @@ void printEndData()
 			LcdDriver.print(delta/1000);
 			LcdDriver.print(" seconds");
 			LcdDriver.setCursor(0,2);
-			LcdDriver.print(lives);
+			
 			if(gameState == Game2)
 			{
+				LcdDriver.print(lives);
 				LcdDriver.print(" collected");
 			}
 			LcdDriver.setCursor(0,3);
 			LcdDriver.print("press button ");
+			INTERVAL	 = INIT_INTERVAL	;
 }
 void prepopulateArray()
 {
@@ -177,14 +182,14 @@ void newGame()
 	startTime = millis();
 	if(gameState == Game1)
 	{
-		lives = 3;
+		lives = 5;
 	}
 	else if ( gameState == Game2)
 	{
 		lives =0;
 	}
 	curRow=0;
-	INTERVAL	= 50;
+	INTERVAL = INIT_INTERVAL	;
 }
 void shiftArrayRight(char inArray[4][20])
 {
