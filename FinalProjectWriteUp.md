@@ -1,3 +1,23 @@
+# <center> Lab  </center> #
+<head>
+<span style="float: left"> ECE 241 <br> Jarod DeWeese  </span>
+<span style="float: right"> Spring 2018 <br> Lab Section 01B </span>
+</head>
+<br><br><br>
+<hr>
+
+__Objective__:  
+
+__Part 1__:
+
+__Part 2__:
+
+__Part 3__:
+
+
+<a name="AppendixA"><a/>
+# Appendix A #
+```C++
 #include <LiquidCrystal.h>
 #include "ButtonDebounce.h"
 
@@ -21,7 +41,7 @@ int bState;
 //buttonStates buttonState = BS_Idle;
 enum GameStates { Pause,NewGame, Playing, BetweenGames, EndOfGame };
 enum GameNumber {Game1, Game2};
-GameNumber gameState = Game1; 
+GameNumber gameState = Game1;
 GameStates curState = Playing;
 unsigned long bTime;
 char emptyChar =' ';
@@ -47,76 +67,72 @@ void setup()
 
 void loop()
 {
-	
+
 	if(millis() - timer >= INTERVAL)
 	{
-		if((INTERVAL - 10 > 50) && curState	 == Playing	)
+		if((INTERVAL - 10 > 50) && curState	 == Playing	)//decrement time interval if playing to speed up game
 		{
 			INTERVAL -= 10;
 		}
 		bState = ButtonTest();
 		if(curState == Playing)
 		{
-			if((millis() - startTime)/1000 >= 30 && gameState == Game2)
-			{
+			if((millis() - startTime)/1000 >= 30 && gameState == Game2)//if we are 30 seconds into game2
+			{//we should end the game
 				curState = EndOfGame;
-				delta = millis() - startTime;
+				delta = millis() - startTime;//calculate how long the game was played for
 			}
-			int t = 12;
-			char temp[t];
-			Serial.readBytes(temp, t);
-		
-			if(bState == 3)
+
+			if(bState == 3)//use did a long press
 			{
-				switchGame();
+				switchGame();//we go to the other game
 			}
 			else if ( bState == 2)//short press
 			{
-				curState = NewGame;
+				curState = NewGame;//just make a new instance of the current game
 			}
-			LcdDriver.clear();
-			shiftArrayRight(contents);
-			insertRandomChars(contents);
-			if(hasCollision(contents, curRow))
+			LcdDriver.clear();//clear screen
+			shiftArrayRight(contents);//move array right
+			insertRandomChars(contents);//put the new asteroids in the leftmost side
+			if(hasCollision(contents, curRow))//if the cursor is at the same place an asteroid
 			{
-				if(gameState == Game1)
+				if(gameState == Game1)//if game 1
 				{
-					if(--lives <= 0)
+					if(--lives <= 0)//if the decremented lives is less than zero
 					{
-						//newGame();
+
 						curState = EndOfGame;
-						delta = (millis() - startTime);
+						delta = (millis() - startTime);//calculate how long the game lasted
 					}
-					
+
 				}
 				else//is Game2
 				{
-					lives++;
-					
+					lives++;//we want to collect asteroides
+
 				}
 			}
-			
-			printArray(contents);
+
+			printArray(contents);//print out our array
 
 		}//end playing
-		else if (curState == EndOfGame)
+		else if (curState == EndOfGame)//we are at end
 		{
-			printEndData();
-			INTERVAL	= INIT_INTERVAL	;
-			if(bState==2 || bState == 3)
+			printEndData();//print out end of game stats
+			INTERVAL	= INIT_INTERVAL	; //reset interval
+			if(bState==2 || bState == 3)//if they press button
 			{
 				curState = Playing;
 				newGame();
 			}
 		}
-		
+
 		else
-		{
+		{//if we end up here, something has gone horribly wroing
 			newGame();
 			curState = Playing;
 		}
-		//delta = (millis() - startTime);
-		timer += INTERVAL;
+		timer += INTERVAL;//increment timer
 	}
 }
 void printEndData()
@@ -128,10 +144,10 @@ void printEndData()
 			LcdDriver.print(delta/1000);
 			LcdDriver.print(" seconds");
 			LcdDriver.setCursor(0,2);
-			
-			if(gameState == Game2)
+
+			if(gameState == Game2)//if we got done with game 2
 			{
-				LcdDriver.print(lives);
+				LcdDriver.print(lives);//actually represents how many collecetd
 				LcdDriver.print(" collected");
 			}
 			LcdDriver.setCursor(0,3);
@@ -140,7 +156,7 @@ void printEndData()
 }
 void prepopulateArray()
 {
-	for(int i =0; i<numRows-4; i++)
+	for(int i =0; i<numRows-4; i++)//clears array
 	{
 		for(int j =0; j<numCols; j++)
 		{
@@ -152,7 +168,7 @@ void prepopulateArray()
 	{
 		for(int j =0; j<numCols;j++)
 		{
-			contents[i][j] = (random(0,100) < 20)? spriteChar:emptyChar;
+			contents[i][j] = (random(0,100) < 20)? spriteChar:emptyChar;//has a 20% chance of inserting a '*' at [i][j]
 		}
 		shiftArrayRight(contents);
 	}
@@ -160,11 +176,11 @@ void prepopulateArray()
 int switchGame()
 {
 	if( gameState == Game1)
-	{
+	{//if currently at Game1, go to Game2
 		gameState = Game2;
 	}
 	else if (gameState == Game2)
-	{
+	{//else go to Game1
 		gameState = Game1;
 	}
 	newGame();
@@ -180,17 +196,17 @@ void newGame()
 	//LcdDriver.print("You ran out of lives");
 	prepopulateArray();
 
-	startTime = millis();
+	startTime = millis();//sets to now
 	if(gameState == Game1)
 	{
-		lives = 5;
+		lives = 5;//presets lives
 	}
 	else if ( gameState == Game2)
 	{
-		lives =0;
+		lives =0;//presets num collected
 	}
 	curRow=0;
-	INTERVAL = INIT_INTERVAL	;
+	INTERVAL = INIT_INTERVAL;
 }
 void shiftArrayRight(char inArray[4][20])
 {
@@ -243,7 +259,7 @@ void MonitorB()
 }
 void incrementVHState(float n)
 {
-	
+
 		curRow += n;
 		if(curRow > numRows)
 		{
@@ -271,3 +287,4 @@ void printArray(char inArray[4][20])
 	LcdDriver.setCursor(0,0);
 	LcdDriver.print(lives);
 }
+```
